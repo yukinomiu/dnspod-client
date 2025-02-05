@@ -1,0 +1,11 @@
+{
+  "intervalMs": 5000,
+  "secretKey": "secretKey",
+  "secretId": "secretId",
+  "modifyAtStartup": true,
+  "domain": "domain",
+  "subDomain": "subDomain",
+  "recordId": 1234,
+  "recordLine": "recordLine",
+  "ttl": 3600
+}
