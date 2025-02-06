@@ -10,7 +10,7 @@ import (
 
 type (
 	Config struct {
-		IntervalMs      int    `json:"intervalMs"`
+		IntervalS       int    `json:"intervalS"`
 		SecretKey       string `json:"secretKey"`
 		SecretId        string `json:"secretId"`
 		ModifyAtStartup bool   `json:"modifyAtStartup"`

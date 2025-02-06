@@ -22,7 +22,7 @@ func Run(cfg *config.Config) {
 	}
 
 	// loop
-	ticker := time.NewTicker(time.Millisecond * time.Duration(cfg.IntervalMs))
+	ticker := time.NewTicker(time.Second * time.Duration(cfg.IntervalS))
 	defer ticker.Stop()
 
 	if cfg.ModifyAtStartup {

@@ -17,7 +17,7 @@
 
 ```
 {
-  "intervalMs": 5000, // 更新时间间隔, 单位为毫秒, 比如600000(10分钟)
+  "intervalS": 3600, // 更新时间间隔, 单位为秒, 比如3600(1小时)
   "secretKey": "secretKey", // 账户对应的SecretKey
   "secretId": "secretId", // 账户对应的SecretId
   "modifyAtStartup": true, // 是否在程序启动时, 立即更新DDNS记录; true: 是; false: 否
