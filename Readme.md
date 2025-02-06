@@ -20,11 +20,15 @@
   "intervalS": 3600, // 更新时间间隔, 单位为秒, 比如3600(1小时)
   "secretKey": "secretKey", // 账户对应的SecretKey
   "secretId": "secretId", // 账户对应的SecretId
-  "modifyAtStartup": true, // 是否在程序启动时, 立即更新DDNS记录; true: 是; false: 否
+  "updateAtStartup": true, // 是否在程序启动时, 立即更新DDNS记录; true: 是; false: 否
   "domain": "domain", // 要更新的域名, 比如 yourdomain.com
   "subDomain": "subDomain", // 要更新的子域名, 比如 home.yourdomain.com
   "recordId": 1234, // 账户对应的域名ID
   "recordLine": "recordLine", // 线路, 比如"默认", "联通"
-  "ttl": 3600 // 域名TTL
+  "ttl": 3600, // 域名TTL
+  "externalPublicIPGetter": {
+    "enabled": true, // 是否启用外部公网IP获取功能
+    "url": "https://api.ipify.org/" // 外部公网IP获取地址, 必须是HTTP或者HTTPS API
+  }
 }
 ```
