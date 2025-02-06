@@ -7,5 +7,9 @@
   "subDomain": "subDomain",
   "recordId": 1234,
   "recordLine": "recordLine",
-  "ttl": 3600
+  "ttl": 3600,
+  "externalPublicIPGetter": {
+    "enabled": true,
+    "url": "https://api.ipify.org/"
+  }
 }

@@ -6,7 +6,9 @@ import (
 	"flag"
 	"io"
 	"log/slog"
+	"net/url"
 	"os"
+	"strings"
 )
 
 type (
@@ -83,6 +85,17 @@ func (c *Config) Validate() (err error) {
 		if c.ExternalPublicIPGetter.URL == "" {
 			err = errors.New("external public IP getter's URL is required")
 			return
+		} else {
+			if u, e := url.Parse(c.ExternalPublicIPGetter.URL); e != nil {
+				err = errors.New("external public IP getter's URL is invalid")
+				return
+			} else {
+				s := strings.ToLower(u.Scheme)
+				if s != "http" && s != "https" {
+					err = errors.New("external public IP getter's URL scheme is invalid")
+					return
+				}
+			}
 		}
 	}
 
