@@ -21,6 +21,9 @@ func main() {
 	if c, err := config.Get(); err != nil {
 		panic(err)
 	} else {
+		if e := c.Validate(); e != nil {
+			panic(e)
+		}
 		cfg = c
 		slog.Info("config", slog.String("value", fmt.Sprintf("%+v", *cfg)))
 	}

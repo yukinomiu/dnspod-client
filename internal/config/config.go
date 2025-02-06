@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"io"
 	"log/slog"
@@ -20,8 +21,73 @@ type (
 		RecordId   int    `json:"recordId"`
 		RecordLine string `json:"recordLine"`
 		Ttl        int    `json:"ttl"`
+
+		ExternalPublicIPGetter struct {
+			Enabled bool   `json:"enabled"`
+			URL     string `json:"url"`
+		} `json:"externalPublicIPGetter"`
 	}
 )
+
+func (c *Config) Validate() (err error) {
+	defer func() {
+		if err != nil {
+			slog.Error(
+				"bad config",
+				slog.String("error", err.Error()),
+			)
+		}
+	}()
+
+	if c.IntervalS <= 0 {
+		err = errors.New("interval seconds must be greater than zero")
+		return
+	}
+
+	if c.SecretKey == "" {
+		err = errors.New("secret key is required")
+		return
+	}
+
+	if c.SecretId == "" {
+		err = errors.New("secret ID is required")
+		return
+	}
+
+	if c.Domain == "" {
+		err = errors.New("domain is required")
+		return
+	}
+
+	if c.SubDomain == "" {
+		err = errors.New("sub domain is required")
+		return
+	}
+
+	if c.RecordId <= 0 {
+		err = errors.New("record ID must be greater than zero")
+		return
+	}
+
+	if c.RecordLine == "" {
+		err = errors.New("record line is required")
+		return
+	}
+
+	if c.Ttl <= 0 {
+		err = errors.New("ttl must be greater than zero")
+		return
+	}
+
+	if c.ExternalPublicIPGetter.Enabled {
+		if c.ExternalPublicIPGetter.URL == "" {
+			err = errors.New("external public IP getter's URL is required")
+			return
+		}
+	}
+
+	return
+}
 
 func Get() (*Config, error) {
 	var (
