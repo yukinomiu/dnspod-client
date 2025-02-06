@@ -1,13 +1,16 @@
 # 腾讯云DNSPod DDNS客户端
 
+## 简介
+
+腾讯云DNS Pod服务的DDNS本地客户端
+
 ## 用法
 
 1. 下载对应平台二进制可执行文件
 2. 运行
-
-```
-./dnspod-client -c /path/to/configfile.json
-```
+    ```
+    ./dnspod-client -c /path/to/configfile.json
+    ```
 
 ## 配置文件说明
 
