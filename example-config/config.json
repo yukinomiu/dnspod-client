@@ -10,6 +10,9 @@
   "ttl": 3600,
   "externalPublicIPGetter": {
     "enabled": true,
-    "url": "https://api.ipify.org/"
+    "urls": [
+      "https://api.ipify.org/",
+      "https://api.seeip.org/"
+    ]
   }
 }

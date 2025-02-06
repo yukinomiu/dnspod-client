@@ -31,7 +31,10 @@
   "ttl": 3600, // 域名TTL
   "externalPublicIPGetter": {
     "enabled": true, // 是否启用外部公网IP获取功能
-    "url": "https://api.ipify.org/" // 外部公网IP获取地址, 必须是HTTP或者HTTPS API
+    "urls": [ // 外部公网IP获取地址列表, 必须是HTTP或者HTTPS API
+      "https://api.ipify.org/",
+      "https://api.seeip.org/"
+    ]
   }
 }
 ```

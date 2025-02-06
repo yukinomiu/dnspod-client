@@ -104,11 +104,27 @@ func (m *Modifier) update() error {
 }
 
 func (m *Modifier) getExternalPublicIP() (net.IP, error) {
+	var (
+		ip  net.IP
+		err error
+	)
+
+	for _, urlStr := range m.cfg.ExternalPublicIPGetter.URLs {
+		ip, err = getExternalPublicIP(m.httpClient, urlStr)
+		if ip != nil && err == nil {
+			return ip, nil
+		}
+	}
+
+	return ip, err
+}
+
+func getExternalPublicIP(httpClient *http.Client, urlStr string) (net.IP, error) {
 	const (
 		maxRespBodySize = 1024
 	)
 
-	if resp, err := m.httpClient.Get(m.cfg.ExternalPublicIPGetter.URL); err != nil {
+	if resp, err := httpClient.Get(urlStr); err != nil {
 		slog.Error("get external public ip error", slog.String("error", err.Error()))
 		return nil, err
 	} else {

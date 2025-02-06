@@ -25,8 +25,8 @@ type (
 		Ttl        int    `json:"ttl"`
 
 		ExternalPublicIPGetter struct {
-			Enabled bool   `json:"enabled"`
-			URL     string `json:"url"`
+			Enabled bool     `json:"enabled"`
+			URLs    []string `json:"urls"`
 		} `json:"externalPublicIPGetter"`
 	}
 )
@@ -82,18 +82,25 @@ func (c *Config) Validate() (err error) {
 	}
 
 	if c.ExternalPublicIPGetter.Enabled {
-		if c.ExternalPublicIPGetter.URL == "" {
-			err = errors.New("external public IP getter's URL is required")
+		if len(c.ExternalPublicIPGetter.URLs) == 0 {
+			err = errors.New("external public IP getter's URL list is required")
 			return
-		} else {
-			if u, e := url.Parse(c.ExternalPublicIPGetter.URL); e != nil {
-				err = errors.New("external public IP getter's URL is invalid")
+		}
+
+		for _, urlStr := range c.ExternalPublicIPGetter.URLs {
+			if urlStr == "" {
+				err = errors.New("external public IP getter's URL can not be empty")
 				return
 			} else {
-				s := strings.ToLower(u.Scheme)
-				if s != "http" && s != "https" {
-					err = errors.New("external public IP getter's URL scheme is invalid")
+				if u, e := url.Parse(urlStr); e != nil {
+					err = errors.New("external public IP getter's URL is invalid")
 					return
+				} else {
+					s := strings.ToLower(u.Scheme)
+					if s != "http" && s != "https" {
+						err = errors.New("external public IP getter's URL scheme is invalid")
+						return
+					}
 				}
 			}
 		}
