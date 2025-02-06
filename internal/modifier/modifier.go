@@ -8,7 +8,10 @@ import (
 	"dnspod-ddns-client/internal/util"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -19,6 +22,8 @@ type (
 	Modifier struct {
 		cfg        *config.Config
 		httpClient *http.Client
+
+		lastPublicIP net.IP
 	}
 )
 
@@ -49,7 +54,109 @@ func (m *Modifier) Run() {
 }
 
 func (m *Modifier) update() error {
-	return m.modify()
+	if !m.cfg.ExternalPublicIPGetter.Enabled {
+		return m.modify()
+	}
+
+	if m.lastPublicIP == nil {
+		// DNS lookup
+		domain := strings.Join([]string{m.cfg.SubDomain, m.cfg.Domain}, ".")
+		if ips, err := net.LookupIP(domain); err != nil {
+			slog.Error(
+				"lookup domain IP error",
+				slog.String("domain", domain),
+				slog.String("error", err.Error()),
+			)
+		} else {
+			if len(ips) > 0 {
+				// use the first IP address
+				m.lastPublicIP = ips[0]
+
+				slog.Info(
+					"lookup domain IP success",
+					slog.String("domain", domain),
+					slog.String("ip-list", fmt.Sprintf("%v", ips)),
+					slog.String("used-ip", m.lastPublicIP.String()),
+				)
+			}
+		}
+	}
+
+	if m.lastPublicIP == nil {
+		// do update
+		m.lastPublicIP, _ = m.getExternalPublicIP()
+		return m.modify()
+	}
+
+	// compare and update
+	if latestPublicIP, err := m.getExternalPublicIP(); err != nil {
+		return m.modify()
+	} else {
+		if latestPublicIP.Equal(m.lastPublicIP) {
+			slog.Info("public IP not changed, skip update")
+			return nil
+		} else {
+			slog.Info("public IP changed, update now")
+			m.lastPublicIP = latestPublicIP
+			return m.modify()
+		}
+	}
+}
+
+func (m *Modifier) getExternalPublicIP() (net.IP, error) {
+	const (
+		maxRespBodySize = 1024
+	)
+
+	if resp, err := m.httpClient.Get(m.cfg.ExternalPublicIPGetter.URL); err != nil {
+		slog.Error("get external public ip error", slog.String("error", err.Error()))
+		return nil, err
+	} else {
+		body := resp.Body
+		if body == nil {
+			slog.Error("response body is empty")
+			return nil, errors.New("response body is empty")
+		}
+		defer func() {
+			if e := body.Close(); e != nil {
+				slog.Error("close body error", slog.String("error", e.Error()))
+			}
+		}()
+
+		if respBytes, maxExceed, e := util.ReadMax(body, maxRespBodySize); e != nil {
+			slog.Error("read response body error", slog.String("error", e.Error()))
+			return nil, e
+		} else {
+			if !maxExceed {
+				if ip := net.ParseIP(string(respBytes)); ip != nil {
+					slog.Info(
+						"get public IP response",
+						slog.String("status", resp.Status),
+						slog.Int("code", resp.StatusCode),
+						slog.String("body", string(respBytes)),
+					)
+					return ip, nil
+				} else {
+					slog.Error(
+						"get public IP bad response",
+						slog.String("status", resp.Status),
+						slog.Int("code", resp.StatusCode),
+						slog.String("body", string(respBytes)),
+					)
+					return nil, errors.New("bad response")
+				}
+			} else {
+				slog.Warn(
+					"get public IP response body too large",
+					slog.String("status", resp.Status),
+					slog.Int("code", resp.StatusCode),
+					slog.Int("max-body-size", maxRespBodySize),
+					slog.String("body", string(respBytes)),
+				)
+				return nil, errors.New("response body too large")
+			}
+		}
+	}
 }
 
 func (m *Modifier) modify() error {
@@ -137,7 +244,7 @@ func (m *Modifier) modify() error {
 
 	// send request
 	if resp, err := m.httpClient.Do(request); err != nil {
-		slog.Error("http call error", slog.String("error", err.Error()))
+		slog.Error("modify D-DNS HTTP call error", slog.String("error", err.Error()))
 		return err
 	} else {
 		body := resp.Body
@@ -145,7 +252,6 @@ func (m *Modifier) modify() error {
 			slog.Warn("response body is empty")
 			return nil
 		}
-
 		defer func() {
 			if e := body.Close(); e != nil {
 				slog.Error("close body error", slog.String("error", e.Error()))
@@ -158,14 +264,14 @@ func (m *Modifier) modify() error {
 		} else {
 			if !maxExceed {
 				slog.Info(
-					"response",
+					"modify response",
 					slog.String("status", resp.Status),
 					slog.Int("code", resp.StatusCode),
 					slog.String("body", string(respBytes)),
 				)
 			} else {
 				slog.Warn(
-					"response body too large",
+					"modify response body too large",
 					slog.String("status", resp.Status),
 					slog.Int("code", resp.StatusCode),
 					slog.Int("max-body-size", maxRespBodySize),
