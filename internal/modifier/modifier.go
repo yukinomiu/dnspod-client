@@ -48,7 +48,7 @@ func (m *Modifier) Run() {
 	}
 
 	for range ticker.C {
-		slog.Info("update D-DNS record")
+		slog.Debug("update D-DNS record")
 		_ = m.update()
 	}
 }
@@ -93,7 +93,7 @@ func (m *Modifier) update() error {
 		return m.modify()
 	} else {
 		if latestPublicIP.Equal(m.lastPublicIP) {
-			slog.Info("public IP not changed, skip update")
+			slog.Debug("public IP not changed, skip update")
 			return nil
 		} else {
 			slog.Info("public IP changed, update now")
