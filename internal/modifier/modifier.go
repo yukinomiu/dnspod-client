@@ -16,18 +16,32 @@ import (
 )
 
 func Run(cfg *config.Config) {
+	const (
+		defaultIntervalS = 600
+	)
+
 	// build HTTP client
 	httpClient := &http.Client{
 		Timeout: time.Second * 5,
 	}
 
 	// loop
-	ticker := time.NewTicker(time.Second * time.Duration(cfg.IntervalS))
+	intervalS := cfg.IntervalS
+	if intervalS <= 0 {
+		intervalS = defaultIntervalS
+		slog.Warn(
+			"bad interval config, use default instead",
+			slog.Int("config-value", cfg.IntervalS),
+			slog.Int("default", defaultIntervalS),
+			slog.Int("used-value", intervalS),
+		)
+	}
+	ticker := time.NewTicker(time.Second * time.Duration(intervalS))
 	defer ticker.Stop()
 
 	if cfg.ModifyAtStartup {
 		// do once immediately
-		slog.Info("modify D-DNS record")
+		slog.Info("modify D-DNS record at startup")
 		_ = modify(cfg, httpClient)
 	}
 
