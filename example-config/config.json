@@ -2,7 +2,7 @@
   "intervalS": 3600,
   "secretKey": "secretKey",
   "secretId": "secretId",
-  "modifyAtStartup": true,
+  "updateAtStartup": true,
   "domain": "domain",
   "subDomain": "subDomain",
   "recordId": 1234,

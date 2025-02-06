@@ -16,7 +16,7 @@ type (
 		IntervalS       int    `json:"intervalS"`
 		SecretKey       string `json:"secretKey"`
 		SecretId        string `json:"secretId"`
-		ModifyAtStartup bool   `json:"modifyAtStartup"`
+		UpdateAtStartup bool   `json:"updateAtStartup"`
 
 		Domain     string `json:"domain"`
 		SubDomain  string `json:"subDomain"`

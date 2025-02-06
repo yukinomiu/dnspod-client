@@ -30,7 +30,8 @@ func main() {
 
 	// D-DNS update
 	go func() {
-		modifier.Run(cfg)
+		mod := modifier.NewModifier(cfg)
+		mod.Run()
 	}()
 
 	// block

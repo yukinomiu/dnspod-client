@@ -15,29 +15,44 @@ import (
 	"time"
 )
 
-func Run(cfg *config.Config) {
-	// build HTTP client
-	httpClient := &http.Client{
-		Timeout: time.Second * 5,
+type (
+	Modifier struct {
+		cfg        *config.Config
+		httpClient *http.Client
 	}
+)
 
-	// loop
-	ticker := time.NewTicker(time.Second * time.Duration(cfg.IntervalS))
-	defer ticker.Stop()
-
-	if cfg.ModifyAtStartup {
-		// do once immediately
-		slog.Info("modify D-DNS record at startup")
-		_ = modify(cfg, httpClient)
-	}
-
-	for range ticker.C {
-		slog.Info("modify D-DNS record")
-		_ = modify(cfg, httpClient)
+func NewModifier(cfg *config.Config) *Modifier {
+	return &Modifier{
+		cfg: cfg,
+		httpClient: &http.Client{
+			Timeout: time.Second * 5,
+		},
 	}
 }
 
-func modify(cfg *config.Config, httpClient *http.Client) error {
+func (m *Modifier) Run() {
+	// loop
+	ticker := time.NewTicker(time.Second * time.Duration(m.cfg.IntervalS))
+	defer ticker.Stop()
+
+	if m.cfg.UpdateAtStartup {
+		// do once immediately
+		slog.Info("update D-DNS record at startup")
+		_ = m.update()
+	}
+
+	for range ticker.C {
+		slog.Info("update D-DNS record")
+		_ = m.update()
+	}
+}
+
+func (m *Modifier) update() error {
+	return m.modify()
+}
+
+func (m *Modifier) modify() error {
 	const (
 		url = "https://dnspod.tencentcloudapi.com"
 
@@ -70,11 +85,11 @@ func modify(cfg *config.Config, httpClient *http.Client) error {
 
 	// build request
 	payload = &Request{
-		Domain:     cfg.Domain,
-		SubDomain:  cfg.SubDomain,
-		RecordId:   cfg.RecordId,
-		RecordLine: cfg.RecordLine,
-		Ttl:        cfg.Ttl,
+		Domain:     m.cfg.Domain,
+		SubDomain:  m.cfg.SubDomain,
+		RecordId:   m.cfg.RecordId,
+		RecordLine: m.cfg.RecordLine,
+		Ttl:        m.cfg.Ttl,
 	}
 	if jsonBytes, err := json.Marshal(payload); err != nil {
 		slog.Error("marshal request to JSON error", slog.String("error", err.Error()))
@@ -106,8 +121,8 @@ func modify(cfg *config.Config, httpClient *http.Client) error {
 			}),
 			payloadJson,
 			utcNow,
-			cfg.SecretKey,
-			cfg.SecretId,
+			m.cfg.SecretKey,
+			m.cfg.SecretId,
 		)
 
 		req.Header.Set(hostHeaderKey, host)
@@ -121,7 +136,7 @@ func modify(cfg *config.Config, httpClient *http.Client) error {
 	}
 
 	// send request
-	if resp, err := httpClient.Do(request); err != nil {
+	if resp, err := m.httpClient.Do(request); err != nil {
 		slog.Error("http call error", slog.String("error", err.Error()))
 		return err
 	} else {
