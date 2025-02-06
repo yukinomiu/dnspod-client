@@ -5,9 +5,9 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"dnspod-ddns-client/internal/config"
+	"dnspod-ddns-client/internal/util"
 	"encoding/hex"
 	"encoding/json"
-	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -56,6 +56,10 @@ func modify(cfg *config.Config, httpClient *http.Client) error {
 		version          = "2021-03-23"
 
 		authorizationHeaderKey = "Authorization"
+	)
+
+	const (
+		maxRespBodySize = 1024 * 4
 	)
 
 	var (
@@ -122,26 +126,37 @@ func modify(cfg *config.Config, httpClient *http.Client) error {
 		return err
 	} else {
 		body := resp.Body
-		if body != nil {
-			defer func() {
-				if e := body.Close(); e != nil {
-					slog.Error("close body error", slog.String("error", e.Error()))
-				}
-			}()
+		if body == nil {
+			slog.Warn("response body is empty")
+			return nil
+		}
 
-			if respBytes, e := io.ReadAll(resp.Body); e != nil {
-				slog.Error("read response body error", slog.String("error", e.Error()))
-				return e
-			} else {
+		defer func() {
+			if e := body.Close(); e != nil {
+				slog.Error("close body error", slog.String("error", e.Error()))
+			}
+		}()
+
+		if respBytes, maxExceed, e := util.ReadMax(body, maxRespBodySize); e != nil {
+			slog.Error("read response body error", slog.String("error", e.Error()))
+			return e
+		} else {
+			if !maxExceed {
 				slog.Info(
 					"response",
 					slog.String("status", resp.Status),
 					slog.Int("code", resp.StatusCode),
 					slog.String("body", string(respBytes)),
 				)
+			} else {
+				slog.Warn(
+					"response body too large",
+					slog.String("status", resp.Status),
+					slog.Int("code", resp.StatusCode),
+					slog.Int("max-body-size", maxRespBodySize),
+					slog.String("body", string(respBytes)),
+				)
 			}
-		} else {
-			slog.Warn("response body is empty")
 		}
 	}
 
